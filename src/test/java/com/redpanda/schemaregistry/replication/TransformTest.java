@@ -83,8 +83,13 @@ public class TransformTest {
     public void testDeletion() {
         // Since there is seq in the key and it doesn't match the offset, the transform returns null, which causes the record to be dropped
         SourceRecord record = buildSourceRecord(1, 0, true, true);
+        String keyBefore = new String((byte[])record.key());
+        assertTrue(keyBefore.contains("seq"));
+
         SourceRecord result = transform.apply(record);
-        assertEquals(record, result);
-        assertSame(record, result);
+        assertNotEquals(record, result);
+
+        String keyAfter = new String((byte[])result.key());
+        assertFalse(keyAfter.contains("seq"));
     }
 }

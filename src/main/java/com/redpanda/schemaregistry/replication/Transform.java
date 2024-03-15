@@ -38,9 +38,6 @@ public class Transform implements Transformation<SourceRecord> {
 
     @Override
     public SourceRecord apply(SourceRecord record) {
-        if (record.value() == null) {
-            return record;
-        }
 
         Map<String, Object> key = deserializeKey(record);
         if (!key.containsKey("seq")) {
@@ -50,7 +47,7 @@ public class Transform implements Transformation<SourceRecord> {
         long seq = (long) key.get("seq");
         long offset = getOffset(record);
 
-        if (seq != offset) {
+        if (seq != offset && record.value() != null) {
             return null;
         }
 
