@@ -38,6 +38,10 @@ public class Transform implements Transformation<SourceRecord> {
 
     @Override
     public SourceRecord apply(SourceRecord record) {
+        if (record.value() == null) {
+            return record;
+        }
+
         Map<String, Object> key = deserializeKey(record);
         if (!key.containsKey("seq")) {
             return record;

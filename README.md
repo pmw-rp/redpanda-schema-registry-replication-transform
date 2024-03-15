@@ -17,6 +17,7 @@ field matches the offset of the message, it is considered valid
 
 When the [transform](src/main/java/com/redpanda/schemaregistry/replication/Transform.java) processes a message, there are three possibilities:
 
+- The message is a deletion (the value is null), therefore the message is replicated without being changed
 - The message doesn't contain a seq field in the key, therefore the message is replicated without being changed
 - The message does contain a seq field and it matches the offset, therefore the message is valid and should be replicated, 
 though the node and seq fields are removed

@@ -20,7 +20,7 @@ public class TransformTest {
         transform.configure(Collections.emptyMap());
     }
 
-    private SourceRecord buildSourceRecord(long offset, long seq, boolean includeSeqAndNode) {
+    private SourceRecord buildSourceRecord(long offset, long seq, boolean includeSeqAndNode, boolean valueIsNull) {
         String key = includeSeqAndNode ? "{\n" +
                 "    \"keytype\": \"SCHEMA\",\n" +
                 "    \"subject\": \"nasdaq_historical_proto-value\",\n" +
@@ -35,7 +35,7 @@ public class TransformTest {
                 "    \"magic\": 1\n" +
                 "}";
 
-        String value = "{\n" +
+        String value = valueIsNull ? null : "{\n" +
                 "    \"subject\": \"nasdaq_historical_proto-value\",\n" +
                 "    \"version\": 1,\n" +
                 "    \"id\": 1,\n" +
@@ -45,13 +45,13 @@ public class TransformTest {
                 "}";
         Map<String, ?> partitionMap = Map.of("partition", 0);
         Map<String, ?> offsetMap = Map.of("offset", offset);
-        return new SourceRecord(partitionMap, offsetMap, "foo", 0, Schema.BYTES_SCHEMA, key.getBytes(), Schema.BYTES_SCHEMA, value.getBytes());
+        return new SourceRecord(partitionMap, offsetMap, "foo", 0, Schema.BYTES_SCHEMA, key.getBytes(), Schema.BYTES_SCHEMA, valueIsNull ? null : value.getBytes());
     }
 
     @Test
     public void testNoSeq() {
         // Since there is no seq in the key, the transform returns the same record object without changing it
-        SourceRecord record = buildSourceRecord(0, -1, false);
+        SourceRecord record = buildSourceRecord(0, -1, false, false);
         SourceRecord result = transform.apply(record);
         assertEquals(record, result);
         assertSame(record, result);
@@ -60,7 +60,7 @@ public class TransformTest {
     @Test
     public void testMatchingSeq() {
         // Since there is seq in the key and it matches the offset, the transform returns the same record (while removing the seq and node fields)
-        SourceRecord record = buildSourceRecord(1, 1, true);
+        SourceRecord record = buildSourceRecord(1, 1, true, false);
         String keyBefore = new String((byte[])record.key());
         assertTrue(keyBefore.contains("seq"));
 
@@ -74,8 +74,17 @@ public class TransformTest {
     @Test
     public void testNonMatchingSeq() {
         // Since there is seq in the key and it doesn't match the offset, the transform returns null, which causes the record to be dropped
-        SourceRecord record = buildSourceRecord(1, 0, true);
+        SourceRecord record = buildSourceRecord(1, 0, true, false);
         SourceRecord result = transform.apply(record);
         assertNull(result);
+    }
+
+    @Test
+    public void testDeletion() {
+        // Since there is seq in the key and it doesn't match the offset, the transform returns null, which causes the record to be dropped
+        SourceRecord record = buildSourceRecord(1, 0, true, true);
+        SourceRecord result = transform.apply(record);
+        assertEquals(record, result);
+        assertSame(record, result);
     }
 }
