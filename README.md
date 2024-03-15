@@ -7,7 +7,7 @@ target cluster, while honouring the message validity checks used by the Redpanda
 
 ## Message Validity
 
-Redpanda Schema Registry extends the key design used by the Apache Schema Registry by adding two additional fields:
+Redpanda Schema Registry extends the key design used by the Confluent Schema Registry by adding two additional fields:
 
 - `node` is used to indicate which SR instance published the message
 - `seq` is a long value used by SR instances to determine which message to consider as valid; if the value in the seq 
@@ -61,7 +61,7 @@ The [demo](demo) directory contains a [docker-compose.yml](demo/docker-compose.y
 - Redpanda Console
 - Prometheus
 - Grafana
-- Apache Connect
+- Connect
 
 Once the containers have started, use the Redpanda console to deploy a new connector and supply the configuration snippet above.
 
