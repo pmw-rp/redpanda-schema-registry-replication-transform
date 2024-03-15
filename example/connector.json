@@ -1,0 +1,23 @@
+{
+  "connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+  "name": "mm2-source-connector",
+  "topics": "_schemas",
+  "replication.factor": "1",
+  "source.cluster.alias": "source",
+  "replication.policy.class": "org.apache.kafka.connect.mirror.IdentityReplicationPolicy",
+  "source.cluster.bootstrap.servers": "seed-fa015309.certnoj7m575jtvbg730.fmc.prd.cloud.redpanda.com:9092",
+  "source.cluster.sasl.mechanism": "SCRAM-SHA-256",
+  "source.cluster.sasl.jaas.config": "org.apache.kafka.common.security.scram.ScramLoginModule required username='pmw' password='redacted';",
+  "source.cluster.security.protocol": "SASL_SSL",
+  "target.cluster.bootstrap.servers": "redpanda-a:9092",
+  "header.converter": "org.apache.kafka.connect.storage.StringConverter",
+  "key.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+  "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+  "sync.topic.acls.enabled": "false",
+  "sync.topic.configs.enabled": "false",
+  "transforms": "provenance,schema-replicator",
+  "transforms.schema-replicator.type": "com.redpanda.schemaregistry.replication.Transform",
+  "transforms.provenance.type": "org.apache.kafka.connect.transforms.InsertHeader",
+  "transforms.provenance.header": "source",
+  "transforms.provenance.value.literal": "certnoj7m575jtvbg730"
+}

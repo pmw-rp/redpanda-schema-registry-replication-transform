@@ -1,0 +1,122 @@
+version: '3.8'
+services:
+
+  redpanda-a:
+    image: redpandadata/redpanda:v23.3.3
+    container_name: redpanda-a
+    command:
+      - redpanda
+      - start
+      - --smp
+      - '1'
+      - --memory
+      - 4000M
+      - --overprovisioned
+      - --node-id
+      - '0'
+      - --seeds
+      - redpanda-a:33145
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:9093
+      - --advertise-kafka-addr
+      - PLAINTEXT://redpanda-a:9092,OUTSIDE://localhost:9093
+      - --pandaproxy-addr
+      - PLAINTEXT://0.0.0.0:28083,OUTSIDE://0.0.0.0:8083
+      - --advertise-pandaproxy-addr
+      - PLAINTEXT://redpanda-a:28083,OUTSIDE://localhost:8083
+      - --rpc-addr 0.0.0.0:33145
+      - --advertise-rpc-addr redpanda-a:33145
+    ports:
+      - 8083:8083
+      - 9093:9093
+    healthcheck:
+      test: curl --fail http://localhost:8083/topics || exit 1
+      interval: 10s
+      retries: 5
+      timeout: 10s
+      start_period: 15s
+    volumes:
+      - ./config/redpanda/.bootstrap.yaml:/etc/redpanda/.bootstrap.yaml
+  console-a:
+    image: docker.redpanda.com/vectorized/console:latest
+    restart: on-failure
+    entrypoint: /bin/sh
+    command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
+    container_name: console-a
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["redpanda-a:9092"]
+          schemaRegistry:
+            enabled: true
+            urls: ["http://redpanda-a:8081"]
+        redpanda:
+          adminApi:
+            enabled: true
+            urls: ["http://redpanda-a:9644"]
+        connect:
+          enabled: true
+          clusters:
+            - name: connect
+              url: http://connect:8083
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redpanda-a
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    environment:
+      - "GF_AUTH_ANONYMOUS_ENABLED=true"
+      - "GF_AUTH_ANONYMOUS_ORG_ROLE=Admin"
+      - "GF_AUTH_ANONYMOUS_HIDE_VERSION=true"
+    volumes:
+      # Mount provisioning configuration
+      - "./config/grafana/provisioning:/etc/grafana/provisioning"
+      # Mount dashboards
+      - "../grafana-dashboards:/var/lib/grafana/dashboards"
+    ports: [ "3000:3000" ]
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    # Mount prometheus configuration
+    volumes: [ "./config/prometheus:/etc/prometheus" ]
+    ports:
+      - "9090:9090"
+
+  connect:
+    image: docker.redpanda.com/redpandadata/connectors:latest
+    volumes:
+      - ./connect-password:/opt/kafka/connect-password
+      - ./connect-plugins:/opt/kafka/connect-plugins
+      - ./connect-certs:/opt/kafka/connect-certs/user-secret
+    hostname: connect
+    ports:
+      - "18083:8083"
+      - "5005:5005"
+    environment:
+      CONNECT_CONFIGURATION: |
+        key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+        value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+        group.id=connectors-group
+        offset.storage.topic=_connectors_offsets
+        config.storage.topic=_connectors_configs
+        status.storage.topic=_connectors_status
+        config.storage.replication.factor=-1
+        offset.storage.replication.factor=-1
+        status.storage.replication.factor=-1
+      CONNECT_BOOTSTRAP_SERVERS: redpanda-a:9092
+      CONNECT_GC_LOG_ENABLED: "false"
+      CONNECT_HEAP_OPTS: -Xms1G -Xmx1G -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+      CONNECT_METRICS_ENABLED: "false"
+#      CONNECT_SASL_MECHANISM: "scram-sha-256"
+#      CONNECT_SASL_USERNAME: "pmw"
+#      CONNECT_SASL_PASSWORD_FILE: "redpanda-password/password"
+      CONNECT_TLS_ENABLED: "false"
+#      CONNECT_TRUSTED_CERTS: "user-secret/ca.crt"
+#      CONNECT_TLS_AUTH_CERT: "user-secret/client.crt"
+#      CONNECT_TLS_AUTH_KEY: "user-secret/client.key"
+      CONNECT_PLUGIN_PATH: "/opt/kafka/connect-plugins"
+    depends_on:
+      - redpanda-a
