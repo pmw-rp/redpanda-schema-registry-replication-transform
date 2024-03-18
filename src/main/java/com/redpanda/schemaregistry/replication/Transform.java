@@ -47,7 +47,7 @@ public class Transform implements Transformation<SourceRecord> {
         long seq = (long) key.get("seq");
         long offset = getOffset(record);
 
-        if (seq != offset && record.value() != null) {
+        if (seq != offset && (record.value() == null || ((byte[])record.value()).length > 0)) {
             return null;
         }
 

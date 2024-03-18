@@ -35,7 +35,7 @@ public class TransformTest {
                 "    \"magic\": 1\n" +
                 "}";
 
-        String value = valueIsNull ? null : "{\n" +
+        String value = valueIsNull ? "" : "{\n" +
                 "    \"subject\": \"nasdaq_historical_proto-value\",\n" +
                 "    \"version\": 1,\n" +
                 "    \"id\": 1,\n" +
@@ -45,7 +45,7 @@ public class TransformTest {
                 "}";
         Map<String, ?> partitionMap = Map.of("partition", 0);
         Map<String, ?> offsetMap = Map.of("offset", offset);
-        return new SourceRecord(partitionMap, offsetMap, "foo", 0, Schema.BYTES_SCHEMA, key.getBytes(), Schema.BYTES_SCHEMA, valueIsNull ? null : value.getBytes());
+        return new SourceRecord(partitionMap, offsetMap, "foo", 0, Schema.BYTES_SCHEMA, key.getBytes(), Schema.BYTES_SCHEMA, value.getBytes());
     }
 
     @Test
