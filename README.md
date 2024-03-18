@@ -15,14 +15,17 @@ field matches the offset of the message, it is considered valid
 
 ## Transform Behaviour
 
-When the [transform](src/main/java/com/redpanda/schemaregistry/replication/Transform.java) processes a message, there are three possibilities:
+When the [transform](src/main/java/com/redpanda/schemaregistry/replication/Transform.java) processes a message, there
+are four possibilities:
 
-- The message is a deletion (the value is null), therefore the message is replicated without being changed
-- The message doesn't contain a seq field in the key, therefore the message is replicated without being changed
-- The message does contain a seq field and it matches the offset, therefore the message is valid and should be replicated, 
-though the node and seq fields are removed
-- The message does contain a seq field but it doesn't match the offset, therefore the message is invalid and shouldn't
-be replicated, therefore the transform returns null
+- The message is a deletion (the value is null)
+  - Replicate the message with the node and seq fields removed
+- The message **doesn't** contain a seq field in the key
+  - Replicate the message without altering it
+- The message **does** contain a seq field **and** it matches the offset
+  - Replicate the message with the node and seq fields removed
+- The message **does** contain a seq field but it **doesn't match the offset**
+  - The message is invalid and shouldn't be replicated, therefore the transform returns null
 
 ## Configuration
 
